@@ -1,0 +1,170 @@
+---
+title: "Apprentissage Statistique - Compte rendu du TP1"
+output: html_document
+---
+*Par Alexandre COMBESSIE et Saad MACHRAOUI*
+
+```{r include=FALSE}
+library(knitr)
+library(car)
+library(lattice)
+library(DMwR)
+algae = knnImputation(algae, k =10, meth = "median")
+lm.a1 <- lm(a1 ~ ., data = algae[, 1:12])
+final.lm = step(lm.a1)
+algae = knnImputation(algae, k =10, meth = "median")
+library(rpart)
+rt.a1 = rpart(a1 ~ ., data = algae[, 1:12])
+```
+
+# Réponses aux questions de la partie 4.6
+## 1. Régression linéaire multiple:
+###  a. Calcul des coefficients de la régression:
+
+La fonction lm prend en compte les variables catégorielles en les transformant en variables indicatrices de chaque modalité. Pour que le modèle reste identifiable, la fonction enlève automatiquement une des modalités (sinon la somme des indicatrices ferait 1, ce qui rendrait la matrice de régression non inversible). Ici la fonction a enlevé la modalité "seasonautumn", la modalité "sizehigh" et la modalité "speedhigh".
+
+La quantité qui sert à mesurer la qualité d'ajustement par un modèle linéaire est le R2, qui varie entre 0 (modèle non ajusté) et 1 (modèle parfaitement ajusté). Ici le R2 vaut `r summary(lm.a1)$r.squared` ce qui est faible. Le modèle est donc mal ajusté.
+
+### b. Pour choisir les variables pertinentes:
+
+On voit que les variables avec un pvalue supérieures à 5% ne sont clairement pas utiles pour prévoir la variable a1. Il s'agit des variables "season", "NH4" et "Chla". Remarque: elles sont identifiables dans la sortie R car elles n'ont pas d'étoiles.
+
+### c. Pour déterminer un sous-modèle qui ne contient pas de variable inutile:
+
+Les variables retenues sont "size", "mxPH", "mnO2", "NO3", NH4", et "PO4". On remarque que ce n'est pas exactement ce qu'on aurait obtenu en enlevant les variables non utiles identifiés par l'ANOVA.
+On remarque que le nouveau R2 est `r summary(final.lm)$r.squared` à comparer à `r summary(lm.a1)$r.squared`. La qualité d'ajustement a donc légèrement baissé. C'est logique car on le R2 augmente mécaniquement avec le nombre de variables explicatives.
+
+### e. Pour calculer les prévisions sur les 140 observations de test qui se trouvent dans le tableau fourni avec algae:
+
+```{r}
+test.algae_imputed = knnImputation(test.algae, k =10, meth = "median")
+nrow(test.algae[!complete.cases(test.algae),])
+lm.predictions.a1 = predict(final.lm, test.algae_imputed)
+rt.predictions.a1 = predict(rt.a1, test.algae_imputed)
+```
+
+On regarde la performance sur l'échantillon de test en prenant les solutions:
+
+```{r}
+# La qualité des prédictions fournies par la régression linéaire multiple:
+regr.eval(algae.sols[, "a1"], lm.predictions.a1, train.y = algae.sols[, "a1"])
+# La qualité des prédictions fournies par l'arbre de décision:
+regr.eval(algae.sols[, "a1"], rt.predictions.a1, train.y = algae.sols[, "a1"])
+```
+
+### f. Evaluer la qualité des prédictions fournies pour les 7 algae:
+```{r eval=TRUE, results="hide", tidy=TRUE}
+rt.regeval<- matrix(nrow=7, ncol=6, dimnames = list((c(paste("a" , 1:7))),
+                                                    c("mae","mse","rmse","mape","nmse","nmae")))
+
+lm.regeval<- matrix(nrow=7, ncol=6,dimnames = list((c(paste("a" , 1:7))),
+                                                   c("mae","mse","rmse","mape","nmse","nmae")))
+algae_training<-algae
+algae_test<-cbind(test.algae_imputed, algae.sols)
+
+for(a in 1:7){
+    
+  form <- as.formula(paste(names(algae_training)[11+a],"~."))
+  l.model <- lm(form,algae_training[,c(1:11,11+a)])
+  l.model <- step(l.model);
+  l.model.preds <- predict(l.model,algae_test[,c(1:11,11+a)])
+  
+  r.model <- rpart(form,algae_training[,c(1:11,11+a)])
+  r.model.preds <- predict(r.model,algae_test[,c(1:11,11+a)])
+  
+  #PLOTS MIS EN COMMENTAIRE
+  #par(lwd=2, col="red")
+  #plot(r.model, compress=TRUE)
+  #text(r.model, use.n=TRUE,col="blue")
+  
+  #PLOTS MIS EN COMMENTAIRE
+  #par(mfrow = c(1, 2), col="navy", bg="lemonchiffon1")
+  #plot(l.model.preds, algae_f[, c(11+a)], main = "Linear Model",
+  #xlab = "Predictions", ylab = "True Values", xlim=c(-15,62))
+  #abline(0, 1, lty = 2);
+  #plot(r.model.preds, algae_f[, c(11+a)], main = "Regression Tree",
+  #xlab = "Predictions", ylab = "True Values", xlim=c(-15,62))
+  #abline(0, 1, lty = 2);
+  
+  lm.regeval[a,]<-regr.eval(algae_test[, c(11+a)], l.model.preds, 
+                            train.y = algae_test[,c(11+a)])
+  rt.regeval[a,]<-regr.eval(algae_test[, c(11+a)], r.model.preds, 
+                            train.y = algae_test[,c(11+a)])
+  
+}
+``` 
+\newpage
+```{r results='asis'}
+#Qualité des prédictions pour la régression
+knitr::kable(lm.regeval)
+#Qualité des prédictions pour l'arbre de décision
+knitr::kable(rt.regeval)
+```
+
+\newpage
+
+# Annexes :
+## 1. Régression linéaire multiple:
+###  a. Calcul des coefficients de la régression:
+```{r}
+library(car)
+library(lattice)
+library(DMwR)
+algae = knnImputation(algae, k =10, meth = "median")
+lm.a1 <- lm(a1 ~ ., data = algae[, 1:12])
+summary(lm.a1)
+```
+### b. Pour choisir les varibles les variables pertinentes:
+```{r}
+#Test de comparaison des variables
+anova(lm.a1)
+```
+### c. Pour déterminer un sous-modèle qui ne contient pas de variable inutile:
+```{r}
+#On enlève ces variables inutiles
+final.lm = step(lm.a1)
+summary(final.lm)
+```
+
+## 2. Arbres de décision:
+### a. Calcul du modèle:
+```{r}
+algae = knnImputation(algae, k =10, meth = "median")
+library(rpart)
+rt.a1 = rpart(a1 ~ ., data = algae[, 1:12])
+rt.a1
+```
+
+### b. Pour afficher l'arbre obtenu:
+
+```{r}
+par(lwd=2, col="red")
+plot(rt.a1, compress=TRUE)
+text(rt.a1, use.n=TRUE,col="blue")
+```
+
+### c. Pour évaluer la qualité de prévision:
+
+```{r}
+lm.predictions.a1 = predict(final.lm, algae)
+rt.predictions.a1 = predict(rt.a1, algae)
+regr.eval(algae[, "a1"], rt.predictions.a1, train.y = algae[,"a1"])
+regr.eval(algae[, "a1"], lm.predictions.a1, train.y = algae[,"a1"])
+```
+
+### d. Pour afficher les erreurs, on peut tracer la courbe des valeurs prédites contre les valeurs observées:
+
+```{r}
+par(mfrow = c(1, 2), col="navy", bg="lemonchiffon1")
+plot(lm.predictions.a1, algae[, "a1"], main = "Linear Model",
+xlab = "Predictions", ylab = "True Values", xlim=c(-15,62))
+abline(0, 1, lty = 2)
+plot(rt.predictions.a1, algae[, "a1"], main = "Regression Tree",
+xlab = "Predictions", ylab = "True Values", xlim=c(-15,62))
+abline(0, 1, lty = 2)
+```
+ 
+
+  
+
+
