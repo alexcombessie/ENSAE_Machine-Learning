@@ -34,6 +34,7 @@ apply(cvpred,2,function(x) sum(class!=x)) # calcule l'erreur de classification
 L'erreur globale, qui correspond au resultat de cette commande, peut êre alors définie comme un vecteur de nombre des erreurs commises sur le nombre total des échantillons de test pour k= 1,2 ...10. L'estimation consiste en une classification au sein de trois classes ("setosa","versicolor","virginica"). L'erreur de classification est booléenne (`class!=x` soit 0 soit 1). On peut l'écrire mathématiquement comme suit:
 $$e=\frac{1}{n}\sum_{i=1}^{n} \mathbb{I}_(y_{pred}\neq y)$$   
 
+****
 
 ### 2. Pourquoi si l'on relance deux fois les commandes de la page 2, les résultats obtenus ne sont pas les mêmes ? Imaginons que nous avons lancé ces commandes 100 fois. Proposez une stratégie pour choisir k en combinant ces 100 résultats obtenus.
 En relançant deux fois la commande on obtient différents résultats parce que l'algorithme utlisé se base sur un choix d'echantillons et ce choix se fait de façon aléatoire. A chaque éxecution on a un vecteur `fold` différent ce qui résulte de deux échantillons `sample1` et `sample2` différents à chaque exécution.
@@ -62,6 +63,7 @@ for (i in 1:10) {
 k_optimal = which(error_mean==min(error_mean))
 ```
 
+****
 
 ### 3. Répondre aux questions 1-5 ci-dessus en insérant le code le cas échéant.
 
@@ -101,7 +103,8 @@ addMedPrice=newTA(FUN = MedPrice, col = 1, legend = "MedPrice")
 candleChart(last(GSPC,"3 months"), theme = "white", TA = "addMedPrice()")
 ```
 
-      
+     
+****
 
 #### 3.2 A quoi l'option `training.per` de la fonction `buildModel` correspond-t-elle ? et l'option `importance` ?   
 
@@ -135,7 +138,7 @@ rf = buildModel(data.model,method="randomForest",
                 training.per=c(start(GSPC),index(GSPC["1999-12-31"])),
                 ntree=50, importance=T)
 ```
-L'option `training.per` indique à la fonction `buildModel` où commence et où s'arrête l'échantillon d'entraînement en termes de dates. On note que comme ce sont des données de séries temporelles, il faut absolument que ce soit une plage temporelle continue. Il n'est pas possible de sélectionner un échantillon d'entraînement aléatoire comme on peut le faire sur d'autres types de données en Machine Learning.   
+L'option `training.per` indique à la fonction `buildModel` oÃ¹ commence et oÃ¹ s'arrête l'échantillon d'entraînement en termes de dates. On note que comme ce sont des données de séries temporelles, il faut absolument que ce soit une plage temporelle continue. Il n'est pas possible de sélectionner un échantillon d'entraînement aléatoire comme on peut le faire sur d'autres types de données en Machine Learning.   
 
 Quant à l'option binaire `importance`, il s'agit de savoir si oui/non on demande au modèle `randomForest` d'étudier l'importance des variables/prédicteurs. C'est une mesure intéressante en termes d'interprétation des variables pour voir lesquelles sont "importantes" pour prédire. Si l'option est choisie, soit `importance=T`, on peut extraire cette information du modèle directement:
 
@@ -153,6 +156,7 @@ t2<-system.time(buildModel(data.model,method="randomForest",
 #print(paste("Temps de calcul sans importance: ",toString(round(t2,0))," secondes"))
 ```   
      
+****
 
 #### 3.3 Sachant que le graphique tracé représente le pourcentage d'augmentation de l'erreur quadratique due à la suppression d'une variable explicative, déterminer les 8 variables les plus pertinentes.      
 
@@ -161,13 +165,9 @@ La fonction `varImpPlot` va trier par défaut les variables par ordre d'importan
 ```{r echo=FALSE, fig.width=7, fig.height=6}
 varImpPlot(rf@fitted.model, type = 1)
 ```
-<<<<<<< HEAD:TP2.rmd
-\newpage
-Les 8 variables les plus "pertinentes" sont donc les 8 premi�res en haut du graphique, soit: 
-=======
+
 
 Les 8 variables les plus "pertinentes" sont donc les 8 premières en haut du graphique, soit: 
->>>>>>> origin/master:TP2_v1.2.Rmd
 
     1. SAR : Parabolic Stop-and-Reverse Index
     2. ADX : Welles Wilder's Directional Movement Index
@@ -179,7 +179,8 @@ Les 8 variables les plus "pertinentes" sont donc les 8 premières en haut du gra
     8. CLV : Close Location Value
 
    
-               
+****
+
 #### 3.4 En utilisant la fonction `specifyModel`, définir le nouveau modèle `data.model` qui a pour variable à expliquer `T.ind(GSPC)` et comme variables explicatives les 8 variables les plus pertinentes trouvées dans la question précédente.
 
 Il suffit d'utiliser la fonction `specifyModel` en lui passant comme argument `Variable à expliquer ~ Variables explicatives choisies`. 
@@ -192,7 +193,8 @@ data.model2 <- specifyModel(formula)
 ```
    
 
-   
+****
+
 #### 3.5 Que fait la fonction `na.omit`? Pourquoi son utilisation est plus importante (voire indispensable) dans la définition de l'échantillon de test, alors que l'on s'en passe dans la définition de l'échantillon d'entrainement.
 
 ```{r}
@@ -205,30 +207,27 @@ Tdata.eval = na.omit(as.data.frame(modelData(
 La fonction `na.omit` est indispensable dans la définition de l'échantillon de test, car cet échantillon sert à l'évaluation de la performance du modèle. Les valeurs manquantes empêcheraient la bonne mesure de la performance, ou fausseraient son évaluation. En revanche, pour la définition de l'échantillon d'entraînement, cela n'est pas nécessaire car on est pas au stade de l'évaluation.   
 
 
-   
-<<<<<<< HEAD:TP2.rmd
-### 4. Utiliser l'algorithme *kNN* pour pr�dire la variable signal sur l'�chantillon de test `Tdata.eval`, en utilisant `Tdata.train` comme �chantillon d'entra�nement. Evaluer l'erreur de la pr�diction. 
+****
 
-On utilisera ici l'algorithme `knn` pour pr�dire la variable signal en suivant les memes etapes que la premiere question.Pour evaluer l'erreur de la prediction, on utilise la meme commande utilisee et expliquee dans la premiere question `apply(cvpred,2,function(x) sum(class!=x))` et on stockera le resultat dans le vecteur `errors_knn`.
-=======
-### 4. Utiliser l'algorithme *kNN* pour prédire la variable signal sur l'échantillon de test `Tdata.eval`, en utilisant `Tdata.train` comme échantillon d'entraînement. Evaluer l'erreur de la prédiction. Inclure le code.
+### 4. Utiliser l'algorithme *kNN* pour prédire la variable signal sur l'échantillon de test `Tdata.eval`, en utilisant `Tdata.train` comme échantillon d'entraînement. Evaluer l'erreur de la prédiction. 
 
 On utilisera ici l'algorithme `knn` pour prédire la variable signal en suivant les memes etapes que la premiere question.Pour evaluer l'erreur de la prediction, on utilise la meme commande utilisee et expliquee dans la premiere question `apply(cvpred,2,function(x) sum(class!=x))` et on stockera le resultat dans le vecteur `errors_knn`.
->>>>>>> origin/master:TP2_v1.2.Rmd
-Dans notre cas, on obtient pour k=10 la plus petite erreur de prediction.
+
+*****
+
+### 4. Utiliser l'algorithme *kNN* pour prédire la variable signal sur l'échantillon de test `Tdata.eval`, en utilisant `Tdata.train` comme échantillon d'entraînement. Evaluer l'erreur de la prédiction. Inclure le code.
+
+On utilisera ici l'algorithme `knn` pour prédire la variable signal en suivant les memes etapes que la premiere question.Pour evaluer l'erreur de la prediction, on utilise la meme commande utilisee et expliquee dans la premiere question `apply(cvpred,2,function(x) sum(class!=x))` et on stockera le resultat dans le vecteur `errors_knn`. Dans notre cas, on obtient pour k=10 la plus petite erreur de prediction.
 ```{r}
 Tdata.eval[,1] = trading.signals(Tdata.eval[,1],0.1,-0.1)
 Tdata.train[,1] = trading.signals(Tdata.train[,1],0.1,-0.1)
 names(Tdata.eval)[1] = "signal"
 names(Tdata.train)[1] = "signal"
-<<<<<<< HEAD:TP2.rmd
 #summary(Tdata.train) #Mis en commentaire pour limiter la taille du compte rendu
-=======
 #summary(Tdata.train) #Mis en commentaire pour limiter la taille du Compte Rendu
 
 cvpred = matrix(NA,nrow=2430,ncol=10)  #Pour le recueil des résultats;
 class=as.numeric(Tdata.eval[,1])       #Vraies classes de Tdata.eval;
->>>>>>> origin/master:TP2_v1.2.Rmd
 
 cvpred = matrix(NA,nrow=2430,ncol=10)  
 class=as.numeric(Tdata.eval[,1])       
@@ -236,24 +235,17 @@ for(i in (1:10))  {
   cvpred[,i] = knn(Tdata.train[,-1], Tdata.eval[,-1] , Tdata.train[,1], k = i)}
 errors_knn = apply(cvpred,2,function(x) sum(class!=x))  
 errors_knn
-<<<<<<< HEAD:TP2.rmd
-=======
-
->>>>>>> origin/master:TP2_v1.2.Rmd
 # Matrice de confusion de l'indice k correspondant au minimum d'erreurs:
 table(cvpred[,which(errors_knn==min(errors_knn))],Tdata.eval[,1])
 ```
 
 
+****
 
 ### 5. La même chose pour l'algorithme d'arbre de décision. Est-il meilleur que kNN ? Afficher l'arbre de décision obtenu.
 
-En comparant la matrice de confusion obtenue à la question 4 et la matrice de confusion ci dessous, on remarque que l'erreur de prediction pour l'arbre de decision est inferieure à l'erreur de prediction pour l'algorithme knn, on en conclut que l'algorithme d'arbre de decision est meilleur que knn. 
-```{r}
-table(predictions.eval.signal,trading.signals(Tdata.eval[,1],0.1,-0.1))
+En comparant la matrice de confusion obtenue à la question 4 et la matrice de confusion ci dessous, on remarque que l'erreur de prediction pour l'arbre de decision est inferieure à l'erreur de prediction pour l'algorithme knn, on en conclut que l'algorithme d'arbre de decision est meilleur que knn au sens de l'erreur de classification sur notre échantillon. 
 
-<<<<<<< HEAD:TP2.rmd
-En comparant la matrice de confusion obtenue � la question 4 et la matrice de confusion ci-dessous, on remarque que l'erreur de prediction pour l'arbre de decision est inferieure � l'erreur de prediction pour l'algorithme knn, on en conclut que l'algorithme d'arbre de decision est meilleur que knn au sens de l'erreur de classification sur notre �chantillon. 
 ```{r fig.width=8, fig.height=7}
 library(rpart)
 Tdata.train[,1]=as.data.frame(modelData(data.model,
@@ -276,9 +268,6 @@ rt.predictions.eval = predict(rt.ai, Tdata.eval[,-1])
 predictions.eval.signal = trading.signals(rt.predictions.eval ,0.1,-0.1)
 table(predictions.eval.signal,trading.signals(Tdata.eval[,1],0.1,-0.1))
 prettyTree(rt.ai,col="navy",bg="lemonchiffon",cex=0.5)
-=======
-prettyTree(rt.ai,col="navy",bg="lemonchiffon")
->>>>>>> origin/master:TP2_v1.2.Rmd
 ```
 
 ****
@@ -376,10 +365,7 @@ names(Tdata.train)[1] = "signal"
 summary(Tdata.train)
 ```
 
-<<<<<<< HEAD:TP2.rmd
-
-=======
-```{r include=false}
+```{r include=FALSE}
 library(rpart)
 Tdata.train[,1] =as.data.frame(modelData(data.model,
                                      data.window=c("1970-01-02","1999-12-31")))[,1]
@@ -409,4 +395,4 @@ table(predictions.eval.signal,trading.signals(Tdata.eval[,1],0.1,-0.1))
 
 prettyTree(rt.ai,col="navy",bg="lemonchiffon")
 ``` 
->>>>>>> origin/master:TP2_v1.2.Rmd
+
